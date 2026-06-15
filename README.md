@@ -26,9 +26,12 @@ tools/export_compare_glb.py  # regenerate the GLBs from the .pt SDF volumes
 ```
 
 The **3D comparison** section uses [`<model-viewer>`](https://modelviewer.dev/) (loaded from a
-CDN) to show four camera-synced columns of real meshes. To regenerate / add cases, edit the
-`WISHLIST` in `tools/export_compare_glb.py` and run it with the project conda env, then update the
-`SETS` array in `static/js/compare.js`.
+CDN) to show four camera-synced columns of real meshes (Ground truth / Input prompt / Input
+conditioning / GenMed) with Dice, CD and UHD per method. The prompt column colour-codes the
+partial observation: observed (gold), missing/broken-away (blue), redundant/extra (purple).
+Dice is on the SDF occupancy; CD/UHD use the paper's metric (`utils/metrics.py`, ×100). To
+regenerate / add cases, edit `CASES` in `tools/export_compare_glb.py`, run it with the project
+conda env (needs a GPU for CD/UHD), then update the `SETS` array in `static/js/compare.js`.
 
 ## Run locally
 

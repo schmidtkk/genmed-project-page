@@ -45,11 +45,12 @@ CASES = [
 ]
 
 COL = {  # base RGB
-    "gt":     (0.40, 0.64, 0.87),
-    "cond":   (0.64, 0.70, 0.74),
-    "ours":   (0.27, 0.66, 0.54),
-    "ghost":  (0.45, 0.66, 0.86),
-    "frag":   (0.92, 0.68, 0.24),
+    "gt":      (0.40, 0.64, 0.87),
+    "cond":    (0.64, 0.70, 0.74),
+    "ours":    (0.27, 0.66, 0.54),
+    "match":   (0.93, 0.69, 0.24),   # observed & correct  -> gold
+    "extra":   (0.70, 0.35, 0.80),   # redundant / spurious -> purple
+    "missing": (0.36, 0.60, 0.88),   # broken-away / unobserved -> faint blue
 }
 TARGET_FACES = 9000
 
@@ -128,35 +129,49 @@ def export_simple(path, vf, rgb):
     _mesh(vf, rgb).export(path)
 
 
+def _occ_mesh(occ, color, alpha=1.0, smooth=4):
+    """Marching-cubes a boolean occupancy volume into a coloured trimesh, or None."""
+    if occ.sum() < 12:
+        return None
+    field = np.where(occ, -1.0, 1.0).astype(np.float32)
+    vf = field_to_vf(field, 0.0, smooth=smooth, keep_largest=False)
+    return None if vf is None else _mesh(vf, color, alpha)
+
+
 def export_prompt(path, gt_field, mask_field):
-    """Prompt viz: the OBSERVED part (solid gold) + the UNOBSERVED part of the
-    shape (faint ghost). Reads as 'what the model is given' vs 'what it must infer'."""
+    """3-way diff of the prompt the model is actually given, vs the true shape:
+        gold   = observed & correct   (in prompt and in GT)
+        purple = redundant / spurious (in prompt but NOT in GT)  -> 'extra'
+        blue   = missing / broken-away (in GT but NOT in prompt, faint) -> must infer
+    The prompt occupancy is an SDF for the broken case, 0/1 occupancy for planes."""
     occ_gt = gt_field < 0
-    # mask is an SDF for the broken prompt (has negatives) but 0/1 occupancy for planes
-    if float(mask_field.min()) < -1e-3:
-        obs_occ = mask_field < 0.0
-    else:
-        obs_occ = mask_field > 0.5
-    obs_field = np.where(occ_gt & obs_occ, -1.0, 1.0).astype(np.float32)
-    mis_field = np.where(occ_gt & ~obs_occ, -1.0, 1.0).astype(np.float32)
-    obs_vf = field_to_vf(obs_field, 0.0, smooth=4, keep_largest=False)
-    mis_vf = field_to_vf(mis_field, 0.0, smooth=4, keep_largest=False)
-    geoms = []
-    if mis_vf is not None:
-        geoms.append(_mesh(mis_vf, COL["ghost"], alpha=0.22))   # unobserved -> faint
-    if obs_vf is not None:
-        geoms.append(_mesh(obs_vf, COL["frag"]))                 # observed -> solid gold
+    occ_prompt = (mask_field < 0.0) if float(mask_field.min()) < -1e-3 else (mask_field > 0.5)
+
+    match = _occ_mesh(occ_gt & occ_prompt, COL["match"])
+    extra = _occ_mesh(occ_prompt & ~occ_gt, COL["extra"])
+    missing = _occ_mesh(occ_gt & ~occ_prompt, COL["missing"], alpha=0.42)
+
+    geoms = [g for g in (missing, match, extra) if g is not None]
+    flags = {"match": match is not None, "extra": extra is not None, "missing": missing is not None}
     if not geoms:
-        # fully observed: fall back to a single solid shape
         gt_vf = field_to_vf(gt_field, 0.0)
         if gt_vf is None:
-            return False
-        geoms = [_mesh(gt_vf, COL["frag"])]
+            return flags
+        geoms = [_mesh(gt_vf, COL["match"])]
     trimesh.Scene(geoms).export(path)
-    return True
+    return flags
 
 
 def main():
+    import sys
+    sys.path.insert(0, str(ROOT))
+    from utils.metrics import compute_metrics_cond  # CD (pytorch3d) + UHD, paper convention
+
+    def cd_uhd(pred, gt):
+        m = compute_metrics_cond([torch.from_numpy(pred).float()],
+                                 [torch.from_numpy(gt).float()])
+        return round(m["cd"] * 100, 2), round(m["uhd"] * 100, 1)  # x100 to match paper scale
+
     if OUT.exists():
         for d in OUT.iterdir():
             if d.is_dir():
@@ -181,18 +196,25 @@ def main():
         export_simple(d / "gt.glb", gt_vf, COL["gt"])
         export_simple(d / "cond.glb", cond_vf, COL["cond"])
         export_simple(d / "ours.glb", ours_vf, COL["ours"])
-        has_prompt = export_prompt(d / "prompt.glb", gt, mask)
+        pflags = export_prompt(d / "prompt.glb", gt, mask)
+        has_prompt = any(pflags.values())
+
+        cd_o, uhd_o = cd_uhd(ours, gt)
+        cd_c, uhd_c = cd_uhd(cond, gt)
 
         files = {"gt": f"{cid}/gt.glb", "cond": f"{cid}/cond.glb", "ours": f"{cid}/ours.glb"}
         if has_prompt:
             files["prompt"] = f"{cid}/prompt.glb"
         entry = {
             "id": cid, "label": label, "prompt": prompt, "promptLabel": plabel,
+            "promptParts": pflags,
             "diceOurs": round(dice(ours, gt), 3), "diceCond": round(dice(cond, gt), 3),
+            "cdOurs": cd_o, "cdCond": cd_c, "uhdOurs": uhd_o, "uhdCond": uhd_c,
             "files": files,
         }
         manifest.append(entry)
-        print(f"  {cid:22s} Dice ours={entry['diceOurs']:.3f} cond={entry['diceCond']:.3f} prompt={'y' if has_prompt else 'n'}")
+        print(f"  {cid:22s} Dice {entry['diceCond']:.3f}->{entry['diceOurs']:.3f}  "
+              f"CD {cd_c}->{cd_o}  UHD {uhd_c}->{uhd_o}  parts={[k for k,v in pflags.items() if v]}")
 
     with open(OUT / "manifest.json", "w") as fh:
         json.dump(manifest, fh, indent=2)

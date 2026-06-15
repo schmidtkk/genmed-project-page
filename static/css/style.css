@@ -282,25 +282,37 @@ table.res tr.ours th { color: var(--accent-ink); font-weight: 700; }
   overflow: hidden; box-shadow: var(--shadow-sm);
 }
 .mv-col.is-ours { border-color: #bfe3d8; box-shadow: 0 0 0 2px #d7f0e8, var(--shadow-sm); }
+/* single-line header so all four columns align at the top (no wrap) */
 .mv-col__head {
-  display: flex; align-items: center; gap: 7px; justify-content: center; flex-wrap: wrap;
-  padding: 10px 10px; font-size: 13px; font-weight: 600; color: var(--ink-soft);
-  border-bottom: 1px solid var(--line); background: var(--bg-soft); min-height: 44px;
+  display: flex; align-items: center; gap: 7px; justify-content: center; flex-wrap: nowrap;
+  height: 44px; padding: 0 10px; font-size: 13px; font-weight: 600; color: var(--ink-soft);
+  border-bottom: 1px solid var(--line); background: var(--bg-soft);
 }
 .mv-col.is-ours .mv-col__head { color: var(--accent-ink); background: #f1faf7; }
 .mv-dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }
-.mv-dice {
-  font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
-  background: #eef1f4; color: var(--muted); border: 1px solid var(--line); white-space: nowrap;
-}
-.mv-col.is-ours .mv-dice { background: #d8f1e8; color: var(--accent-ink); border-color: #bfe3d8; }
-model-viewer { width: 100%; height: 240px; display: block; background: #f7f9fb; --poster-color: transparent; }
+.mv-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+model-viewer { width: 100%; height: 230px; display: block; background: #f7f9fb; --poster-color: transparent; }
 .mv-empty {
-  width: 100%; height: 240px; display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 230px; display: flex; align-items: center; justify-content: center;
   color: var(--muted); font-size: 13px; background: #f7f9fb; text-align: center; padding: 0 14px;
 }
-.mv-hint { text-align: center; color: var(--muted); font-size: 13px; margin-top: 16px; }
-.mv-loading { display:flex; align-items:center; justify-content:center; height:240px; color:var(--muted); font-size:13px; }
+/* fixed-height footer so columns also align at the bottom */
+.mv-foot {
+  height: 62px; border-top: 1px solid var(--line); background: var(--bg-soft);
+  display: flex; align-items: center; justify-content: center; padding: 8px 10px;
+}
+.mv-foot-label { font-size: 12.5px; color: var(--muted); }
+.mv-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; width: 100%; }
+.mv-metric { text-align: center; line-height: 1.2; }
+.mv-metric .l { display: block; font-size: 10px; color: var(--muted); letter-spacing: .02em; }
+.mv-metric .v { font-size: 15px; font-weight: 700; color: var(--ink); }
+.mv-metric .v.win { color: var(--accent); }
+.mv-metric .v.lose { color: #b06a5e; }
+/* prompt colour legend */
+.mv-legend { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin-top: 18px; font-size: 13px; color: var(--ink-soft); }
+.mv-legend span { display: inline-flex; align-items: center; gap: 7px; }
+.mv-legend .sw { width: 13px; height: 13px; border-radius: 3px; display: inline-block; }
+.mv-hint { text-align: center; color: var(--muted); font-size: 13px; margin-top: 14px; }
 
 /* footer */
 footer { padding: 40px 0 60px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
