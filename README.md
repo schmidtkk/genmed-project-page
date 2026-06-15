@@ -19,8 +19,16 @@ Published via GitHub Pages: **https://schmidtkk.github.io/genmed-project-page/**
 index.html              # the page
 static/css/style.css    # self-contained styles (no CSS framework dependency)
 static/js/main.js        # image lightbox + copy-BibTeX + carousel
+static/js/compare.js     # interactive multi-column 3D mesh comparison (model-viewer)
 static/images/           # paper figures + rendered gallery panels
+static/models/           # web-ready GLB meshes (GT / input / COND / Ours) per case
+tools/export_compare_glb.py  # regenerate the GLBs from the .pt SDF volumes
 ```
+
+The **3D comparison** section uses [`<model-viewer>`](https://modelviewer.dev/) (loaded from a
+CDN) to show four camera-synced columns of real meshes. To regenerate / add cases, edit the
+`WISHLIST` in `tools/export_compare_glb.py` and run it with the project conda env, then update the
+`SETS` array in `static/js/compare.js`.
 
 ## Run locally
 

@@ -1,0 +1,73 @@
+[
+  {
+    "id": "bladder_oneplane",
+    "label": "Urinary bladder",
+    "prompt": "oneplane",
+    "promptLabel": "One-plane cross-section",
+    "files": {
+      "gt": "bladder_oneplane/gt.glb",
+      "input": "bladder_oneplane/input.glb",
+      "cond": "bladder_oneplane/cond.glb",
+      "ours": "bladder_oneplane/ours.glb"
+    }
+  },
+  {
+    "id": "kidney_broken",
+    "label": "Kidney (right)",
+    "prompt": "broken",
+    "promptLabel": "Broken / missing region",
+    "files": {
+      "gt": "kidney_broken/gt.glb",
+      "cond": "kidney_broken/cond.glb",
+      "ours": "kidney_broken/ours.glb"
+    }
+  },
+  {
+    "id": "myocardium_triplane",
+    "label": "Heart myocardium",
+    "prompt": "triplane",
+    "promptLabel": "Tri-plane cross-section",
+    "files": {
+      "gt": "myocardium_triplane/gt.glb",
+      "input": "myocardium_triplane/input.glb",
+      "cond": "myocardium_triplane/cond.glb",
+      "ours": "myocardium_triplane/ours.glb"
+    }
+  },
+  {
+    "id": "femur_multiplane",
+    "label": "Femur (right)",
+    "prompt": "multiplane",
+    "promptLabel": "Multi-plane slices",
+    "files": {
+      "gt": "femur_multiplane/gt.glb",
+      "input": "femur_multiplane/input.glb",
+      "cond": "femur_multiplane/cond.glb",
+      "ours": "femur_multiplane/ours.glb"
+    }
+  },
+  {
+    "id": "sacrum_multiplane",
+    "label": "Sacrum",
+    "prompt": "multiplane",
+    "promptLabel": "Multi-plane slices",
+    "files": {
+      "gt": "sacrum_multiplane/gt.glb",
+      "input": "sacrum_multiplane/input.glb",
+      "cond": "sacrum_multiplane/cond.glb",
+      "ours": "sacrum_multiplane/ours.glb"
+    }
+  },
+  {
+    "id": "atrium_oneplane",
+    "label": "Left atrium",
+    "prompt": "oneplane",
+    "promptLabel": "One-plane cross-section",
+    "files": {
+      "gt": "atrium_oneplane/gt.glb",
+      "input": "atrium_oneplane/input.glb",
+      "cond": "atrium_oneplane/cond.glb",
+      "ours": "atrium_oneplane/ours.glb"
+    }
+  }
+]

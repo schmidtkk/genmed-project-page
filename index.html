@@ -29,6 +29,7 @@
         <a href="#method">Method</a>
         <a href="#segmentation">Segmentation</a>
         <a href="#completion">Shape Completion</a>
+        <a href="#compare">3D Compare</a>
         <a href="#gallery">Gallery</a>
         <a href="#pipeline">Pipeline</a>
         <a href="#bibtex">BibTeX</a>
@@ -242,6 +243,19 @@
     </div>
   </section>
 
+  <!-- ===================== 3D COMPARISON (model-viewer) ===================== -->
+  <section id="compare" class="section--soft">
+    <div class="container">
+      <p class="eyebrow">Interactive</p>
+      <h2 class="h2">3D comparison, side by side</h2>
+      <p class="lead">Rotate any mesh &mdash; all columns stay camera-synced. Compare the ground truth, the partial input, the input-conditioning baseline, and GenMed's guided completion, on the actual reconstructed geometry.</p>
+
+      <div class="seg" id="setPicker"></div>
+      <div class="mv-grid" id="mvGrid"></div>
+      <p class="mv-hint">Drag to rotate &middot; scroll to zoom &middot; meshes are marching-cubes extractions of each model's SDF output, decimated for the web.</p>
+    </div>
+  </section>
+
   <!-- ===================== GALLERY (CAROUSEL) ===================== -->
   <section id="gallery">
     <div class="container">
@@ -335,6 +349,8 @@
   <!-- lightbox -->
   <div class="lb" id="lightbox"><img id="lbImg" src="" alt="" /></div>
 
+  <script type="module" src="https://unpkg.com/@google/model-viewer@3.5.0/dist/model-viewer.min.js"></script>
   <script src="static/js/main.js"></script>
+  <script src="static/js/compare.js"></script>
 </body>
 </html>

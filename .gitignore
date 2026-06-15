@@ -4,3 +4,5 @@ Thumbs.db
 .idea/
 .vscode/
 .claude/
+__pycache__/
+*.pyc
