@@ -248,11 +248,11 @@
     <div class="container">
       <p class="eyebrow">Interactive</p>
       <h2 class="h2">3D comparison, side by side</h2>
-      <p class="lead">Rotate any mesh &mdash; all columns stay camera-synced. Compare the ground truth, the partial input, the input-conditioning baseline, and GenMed's guided completion, on the actual reconstructed geometry.</p>
+      <p class="lead">Rotate any mesh &mdash; all columns stay camera-synced. For high-Dice cases we compare the <b>ground-truth shape</b>, the <b>input conditioning</b> baseline, and <b>GenMed (Ours)</b>; the <b>input prompt</b> shows the actual partial observation. Dice vs. ground truth is reported on each method.</p>
 
       <div class="seg" id="setPicker"></div>
       <div class="mv-grid" id="mvGrid"></div>
-      <p class="mv-hint">Drag to rotate &middot; scroll to zoom &middot; meshes are marching-cubes extractions of each model's SDF output, decimated for the web.</p>
+      <p class="mv-hint">Drag to rotate &middot; scroll to zoom &middot; the prompt shows the observed fragment (gold) inside a faint ghost of the full shape. Meshes are marching-cubes extractions of each model's SDF output, decimated for the web.</p>
     </div>
   </section>
 
