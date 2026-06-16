@@ -22,6 +22,7 @@ import open3d as o3d
 import torch
 import trimesh
 from pathlib import Path
+from scipy.ndimage import gaussian_filter, zoom
 from skimage import measure
 
 ROOT = Path("/mnt/nas1/disk01/weidongguo/yuheliu/msn_lyh")
@@ -53,7 +54,8 @@ COL = {  # base RGB
     "extra":   (0.70, 0.35, 0.80),   # redundant / spurious -> purple
     "missing": (0.36, 0.60, 0.88),   # broken-away / unobserved -> faint blue
 }
-TARGET_FACES = 9000
+TARGET_FACES = 11000
+UPSAMPLE = 2        # trilinear-upsample the SDF before marching cubes for a smoother surface
 
 
 def _np(t):
@@ -81,8 +83,17 @@ def _largest(m):
     return m
 
 
-def field_to_vf(field, level, smooth=12, keep_largest=True):
-    """Marching cubes on a scalar field -> (verts, faces) in the shared frame."""
+def field_to_vf(field, level, smooth=10, keep_largest=True, upsample=UPSAMPLE, sigma=2.0):
+    """Marching cubes on a scalar field -> (verts, faces) in the shared frame.
+    The field is trilinearly upsampled and Gaussian-smoothed before MC so the
+    isosurface is free of voxel terracing; coords are normalised by the
+    (upsampled) resolution so all meshes stay aligned."""
+    if upsample and upsample != 1:
+        field = zoom(field, upsample, order=1)
+        sigma = sigma * upsample
+    if sigma:
+        field = gaussian_filter(field, sigma=sigma)
+    res = field.shape[0]
     lo, hi = float(field.min()), float(field.max())
     if not (lo < level < hi):
         return None
@@ -103,9 +114,10 @@ def field_to_vf(field, level, smooth=12, keep_largest=True):
         m = m.simplify_quadric_decimation(TARGET_FACES)
     m.remove_degenerate_triangles()
     m.remove_unreferenced_vertices()
+    m.compute_vertex_normals()
     if len(m.triangles) == 0:
         return None
-    verts = (np.asarray(m.vertices) - 32.0) / 64.0
+    verts = (np.asarray(m.vertices) - res / 2.0) / res
     return verts, np.asarray(m.triangles)
 
 
@@ -130,13 +142,18 @@ def export_simple(path, vf, rgb):
     _mesh(vf, rgb).export(path)
 
 
-def _occ_mesh(occ, color, alpha=1.0, smooth=4):
-    """Marching-cubes a boolean occupancy volume into a coloured trimesh, or None."""
+def _occ_mesh(occ, color, alpha=1.0):
+    """Marching-cubes a boolean occupancy volume into a coloured trimesh, or None.
+    Smooths as much as possible while backing off the Gaussian so thin prompt
+    slices (one-/tri-/multi-plane) are not blurred away."""
     if occ.sum() < 12:
         return None
     field = np.where(occ, -1.0, 1.0).astype(np.float32)
-    vf = field_to_vf(field, 0.0, smooth=smooth, keep_largest=False)
-    return None if vf is None else _mesh(vf, color, alpha)
+    for sig in (1.6, 0.9, 0.4, 0.0):
+        vf = field_to_vf(field, 0.0, smooth=12, keep_largest=False, sigma=sig)
+        if vf is not None:
+            return _mesh(vf, color, alpha)
+    return None
 
 
 def export_prompt(path, gt_field, mask_field):
