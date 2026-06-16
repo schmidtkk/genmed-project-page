@@ -34,14 +34,15 @@ PROMPT_DIRS = {
     "broken":     ("output_vis_orig/COND1__use_broken__cp20", "output_vis_orig/GUIDE1__use_broken__cp20"),
 }
 
-# (id, prompt_type, organ, sample, label, prompt_label) — high-Dice, Ours > COND, varied prompts
+# (id, prompt_type, organ, sample, label, prompt_label) — Ours > COND, varied prompts.
+# Broken cases chosen to have a VISIBLE missing chunk and/or redundant region.
 CASES = [
-    ("kidney_oneplane",     "oneplane",   "kidney_right",     "042966_kidneyright",            "Kidney (right)",    "One-plane cross-section"),
-    ("bladder_broken",      "broken",     "urinary_bladder",  "s1151_urinary_bladder.nii.g_1", "Urinary bladder",   "Broken / missing region"),
-    ("gallbladder_triplane","triplane",   "gallbladder",      "012499_gallbladder",            "Gallbladder",       "Tri-plane cross-section"),
-    ("myocardium_broken",   "broken",     "heart_myocardium", "s0513_heart_myocardium.nii.g_1","Heart myocardium",  "Broken / missing region"),
-    ("eyeball_multiplane",  "multiplane", "eyeballright",     "062131_eyeballright",           "Eyeball (right)",   "Multi-plane slices"),
-    ("femur_broken",        "broken",     "femur_right",      "s0624_femur_right.nii.g_1",     "Femur (right)",     "Broken / missing region"),
+    ("pancreas_broken",     "broken",     "pancreas",          "s0236_pancreas.nii.g_1",         "Pancreas",          "Broken — missing + redundant"),
+    ("pulmonary_broken",    "broken",     "pulmonary_artery",  "s0080_pulmonary_artery.nii.g_1", "Pulmonary artery",  "Broken — missing + redundant"),
+    ("adrenal_broken",      "broken",     "adrenal_gland_right","s0369_adrenal_gland_right.nii.g_1","Adrenal gland",   "Broken / missing region"),
+    ("gallbladder_triplane","triplane",   "gallbladder",       "012499_gallbladder",             "Gallbladder",       "Tri-plane cross-section"),
+    ("eyeball_multiplane",  "multiplane", "eyeballright",      "062131_eyeballright",            "Eyeball (right)",   "Multi-plane slices"),
+    ("kidney_oneplane",     "oneplane",   "kidney_right",      "042966_kidneyright",             "Kidney (right)",    "One-plane cross-section"),
 ]
 
 COL = {  # base RGB
@@ -149,7 +150,7 @@ def export_prompt(path, gt_field, mask_field):
 
     match = _occ_mesh(occ_gt & occ_prompt, COL["match"])
     extra = _occ_mesh(occ_prompt & ~occ_gt, COL["extra"])
-    missing = _occ_mesh(occ_gt & ~occ_prompt, COL["missing"], alpha=0.42)
+    missing = _occ_mesh(occ_gt & ~occ_prompt, COL["missing"], alpha=0.55)
 
     geoms = [g for g in (missing, match, extra) if g is not None]
     flags = {"match": match is not None, "extra": extra is not None, "missing": missing is not None}
