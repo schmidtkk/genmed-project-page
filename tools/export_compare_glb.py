@@ -142,18 +142,16 @@ def export_simple(path, vf, rgb):
     _mesh(vf, rgb).export(path)
 
 
-def _occ_mesh(occ, color, alpha=1.0):
+def _occ_mesh(occ, color, alpha=1.0, thin=False):
     """Marching-cubes a boolean occupancy volume into a coloured trimesh, or None.
-    Smooths as much as possible while backing off the Gaussian so thin prompt
-    slices (one-/tri-/multi-plane) are not blurred away."""
+    `thin=True` (plane cross-section slices) uses a small fixed Gaussian so the
+    thin sheets are preserved; solid regions get strong smoothing like the SDFs."""
     if occ.sum() < 12:
         return None
     field = np.where(occ, -1.0, 1.0).astype(np.float32)
-    for sig in (1.6, 0.9, 0.4, 0.0):
-        vf = field_to_vf(field, 0.0, smooth=12, keep_largest=False, sigma=sig)
-        if vf is not None:
-            return _mesh(vf, color, alpha)
-    return None
+    sigma = 0.3 if thin else 1.5
+    vf = field_to_vf(field, 0.0, smooth=12, keep_largest=False, sigma=sigma)
+    return None if vf is None else _mesh(vf, color, alpha)
 
 
 def export_prompt(path, gt_field, mask_field):
@@ -163,9 +161,11 @@ def export_prompt(path, gt_field, mask_field):
         blue   = missing / broken-away (in GT but NOT in prompt, faint) -> must infer
     The prompt occupancy is an SDF for the broken case, 0/1 occupancy for planes."""
     occ_gt = gt_field < 0
-    occ_prompt = (mask_field < 0.0) if float(mask_field.min()) < -1e-3 else (mask_field > 0.5)
+    is_broken = float(mask_field.min()) < -1e-3
+    occ_prompt = (mask_field < 0.0) if is_broken else (mask_field > 0.5)
 
-    match = _occ_mesh(occ_gt & occ_prompt, COL["match"])
+    # plane prompts -> the observed region is thin cross-section slices
+    match = _occ_mesh(occ_gt & occ_prompt, COL["match"], thin=not is_broken)
     extra = _occ_mesh(occ_prompt & ~occ_gt, COL["extra"])
     missing = _occ_mesh(occ_gt & ~occ_prompt, COL["missing"], alpha=0.55)
 
