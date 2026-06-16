@@ -74,9 +74,9 @@
     "prompt": "triplane",
     "promptLabel": "Tri-plane cross-section",
     "promptParts": {
-      "match": true,
-      "extra": false,
-      "missing": true
+      "planes": 3,
+      "ghost": true,
+      "extra": false
     },
     "diceOurs": 0.934,
     "diceCond": 0.719,
@@ -97,9 +97,9 @@
     "prompt": "multiplane",
     "promptLabel": "Multi-plane slices",
     "promptParts": {
-      "match": true,
-      "extra": false,
-      "missing": true
+      "planes": 7,
+      "ghost": true,
+      "extra": false
     },
     "diceOurs": 0.984,
     "diceCond": 0.938,
@@ -120,9 +120,9 @@
     "prompt": "oneplane",
     "promptLabel": "One-plane cross-section",
     "promptParts": {
-      "match": true,
-      "extra": false,
-      "missing": true
+      "planes": 1,
+      "ghost": true,
+      "extra": false
     },
     "diceOurs": 0.864,
     "diceCond": 0.554,

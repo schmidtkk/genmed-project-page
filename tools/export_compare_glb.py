@@ -154,23 +154,80 @@ def _occ_mesh(occ, color, alpha=1.0, thin=False):
     return None if vf is None else _mesh(vf, color, alpha)
 
 
+def _detect_planes(occ):
+    """Find axis-aligned cutting planes as (axis, index): a plane perpendicular to
+    axis a shows up as a sharp peak in the per-slice coverage along a."""
+    planes = []
+    for a in range(3):
+        cov = occ.sum(axis=tuple(i for i in range(3) if i != a)).astype(float)
+        if cov.max() == 0:
+            continue
+        thr = max(4.0 * float(cov.mean()), 0.3 * float(cov.max()))
+        for i in range(len(cov)):
+            lo = max(0, i - 1); hi = min(len(cov), i + 2)
+            if cov[i] >= thr and cov[i] == cov[lo:hi].max():
+                planes.append((a, i))
+    return planes
+
+
+def _plane_quads(planes, bbox, color, alpha=0.5, margin=3):
+    """Flat translucent quads (one per cutting plane), sized to the shape bbox."""
+    lo = np.maximum(bbox[0] - margin, 0)
+    hi = np.minimum(bbox[1] + margin, 63)
+    V, F = [], []
+    for a, i in planes:
+        c0, c1 = [x for x in range(3) if x != a]
+        base = len(V)
+        for u in (lo[c0], hi[c0]):
+            for w in (lo[c1], hi[c1]):
+                p = [0.0, 0.0, 0.0]; p[a] = i; p[c0] = u; p[c1] = w
+                V.append(p)
+        F += [[base, base + 1, base + 3], [base, base + 3, base + 2]]
+    if not V:
+        return None
+    verts = (np.asarray(V, float) - 32.0) / 64.0
+    m = trimesh.Trimesh(vertices=verts, faces=np.asarray(F), process=False)
+    m.visual = trimesh.visual.TextureVisuals(material=_material(color, alpha))
+    return m
+
+
 def export_prompt(path, gt_field, mask_field):
-    """3-way diff of the prompt the model is actually given, vs the true shape:
-        gold   = observed & correct   (in prompt and in GT)
-        purple = redundant / spurious (in prompt but NOT in GT)  -> 'extra'
-        blue   = missing / broken-away (in GT but NOT in prompt, faint) -> must infer
-    The prompt occupancy is an SDF for the broken case, 0/1 occupancy for planes."""
+    """Visualise the prompt the model is given vs the true shape.
+    Broken (mask is an SDF): a 3-way solid diff
+        gold = observed & correct, purple = redundant/extra, blue = missing.
+    Plane prompts (mask is 0/1 occupancy): the observed cutting planes drawn as
+    translucent gold quads through a faint blue ghost of the full shape, so one-,
+    tri- and multi-plane are equally legible."""
     occ_gt = gt_field < 0
     is_broken = float(mask_field.min()) < -1e-3
-    occ_prompt = (mask_field < 0.0) if is_broken else (mask_field > 0.5)
 
-    # plane prompts -> the observed region is thin cross-section slices
-    match = _occ_mesh(occ_gt & occ_prompt, COL["match"], thin=not is_broken)
-    extra = _occ_mesh(occ_prompt & ~occ_gt, COL["extra"])
-    missing = _occ_mesh(occ_gt & ~occ_prompt, COL["missing"], alpha=0.55)
+    if is_broken:
+        occ_prompt = mask_field < 0.0
+        match = _occ_mesh(occ_gt & occ_prompt, COL["match"])
+        extra = _occ_mesh(occ_prompt & ~occ_gt, COL["extra"])
+        missing = _occ_mesh(occ_gt & ~occ_prompt, COL["missing"], alpha=0.55)
+        geoms = [g for g in (missing, match, extra) if g is not None]
+        flags = {"match": match is not None, "extra": extra is not None, "missing": missing is not None}
+    else:
+        occ_prompt = mask_field > 0.5
+        flags = {"planes": 0, "ghost": False, "extra": False}
+        geoms = []
+        ghost_vf = field_to_vf(gt_field, 0.0, sigma=2.0)
+        if ghost_vf is not None:
+            geoms.append(_mesh(ghost_vf, COL["missing"], alpha=0.20))
+            flags["ghost"] = True
+        idx = np.argwhere(occ_gt)
+        bbox = (idx.min(0), idx.max(0)) if len(idx) else (np.zeros(3), np.full(3, 63))
+        planes = _detect_planes(occ_prompt)
+        quads = _plane_quads(planes, bbox, COL["match"], alpha=0.55)
+        if quads is not None:
+            geoms.append(quads)
+        flags["planes"] = len(planes)
+        # spurious regions outside GT (rare for planes) still shown in purple
+        extra = _occ_mesh(occ_prompt & ~occ_gt, COL["extra"])
+        if extra is not None:
+            geoms.append(extra); flags["extra"] = True
 
-    geoms = [g for g in (missing, match, extra) if g is not None]
-    flags = {"match": match is not None, "extra": extra is not None, "missing": missing is not None}
     if not geoms:
         gt_vf = field_to_vf(gt_field, 0.0)
         if gt_vf is None:
